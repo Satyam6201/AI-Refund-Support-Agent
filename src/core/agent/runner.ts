@@ -17,7 +17,6 @@ const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 export async function runRefundAgentWorkflow(params: RunAgentParams) {
   const { userMessage, customerId, orderId, maxRetries = 3, recursionLimit = 15 } = params;
 
-  // 1. Initialize Execution session in DB
   const execution = await AgentLogService.createExecution(customerId || null, userMessage);
   const executionId = execution.id;
 
@@ -43,7 +42,6 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
   while (currentRetry <= maxRetries) {
     try {
       if (currentRetry > 0) {
-        // Exponential backoff delay (300ms, 600ms, 1200ms)
         const backoffMs = Math.pow(2, currentRetry - 1) * 300;
         await sleep(backoffMs);
 
@@ -56,7 +54,6 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
         });
       }
 
-      // 2. Execute LangGraph Workflow with recursion limits
       const initialState = {
         messages: [new HumanMessage(userMessage)],
         customerId,
@@ -70,7 +67,6 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
         recursionLimit,
       });
 
-      // Extract final assistant message
       const messages = finalState.messages;
       const lastMessage = messages[messages.length - 1];
       const responseText =
@@ -78,8 +74,6 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
           ? lastMessage.content
           : JSON.stringify(lastMessage?.content || 'No response content generated.');
 
-      // Update final execution status in DB:
-      // Policy approvals, policy denials, and escalations are ALL completed business decisions (COMPLETED status)!
       const finalStatus =
         finalState.status === 'ESCALATED'
           ? ExecutionStatus.ESCALATED
@@ -103,9 +97,9 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
         status: finalStatus,
         state: finalState,
       };
-    } catch (error: any) {
-      // Classify the error (401, 429 quota, 5xx, network error)
-      const classified = AIErrorClassifier.classify(error);
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      const classified = AIErrorClassifier.classify(errorObj);
 
       await AgentLogService.addLog({
         executionId,
@@ -116,7 +110,6 @@ export async function runRefundAgentWorkflow(params: RunAgentParams) {
         event: 'TOOL_ERROR',
       });
 
-      // NON-RETRYABLE ERRORS (Quota Exhaustion or Invalid API Key): ABORT IMMEDIATELY!
       if (!classified.isRetryable || currentRetry >= maxRetries) {
         await AgentLogService.updateExecutionStatus(
           executionId,

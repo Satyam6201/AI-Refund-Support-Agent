@@ -18,16 +18,10 @@ export const processRefundTool = tool(
     try {
       const { customerId, orderId, reason, simulateError } = input;
 
-      // Developer simulation mode for testing retries
       if (simulateError) {
         throw new Error('Simulated transient tool failure for demonstration.');
       }
 
-      // =========================================================================
-      // INDEPENDENT SECURITY DOUBLE-CHECK VALIDATION
-      // =========================================================================
-
-      // 1. Verify Customer Exists
       const customer = await CustomerService.getCustomerById(customerId);
       if (!customer) {
         return JSON.stringify({
@@ -37,7 +31,6 @@ export const processRefundTool = tool(
         });
       }
 
-      // 2. Verify Order Exists
       const order = await OrderService.getOrderById(orderId);
       if (!order) {
         return JSON.stringify({
@@ -47,7 +40,6 @@ export const processRefundTool = tool(
         });
       }
 
-      // 3. Verify Order Belongs to Customer
       if (order.customerId !== customerId) {
         return JSON.stringify({
           success: false,
@@ -56,7 +48,6 @@ export const processRefundTool = tool(
         });
       }
 
-      // 4. IDEMPOTENCY CHECK: If already processed, return existing refund safely
       const existingRefund = await RefundService.getRefundByOrderId(orderId);
       if (existingRefund || order.refundStatus === 'REFUNDED') {
         return JSON.stringify({
@@ -69,7 +60,6 @@ export const processRefundTool = tool(
         });
       }
 
-      // 5. Run Deterministic Policy Engine Check
       const policyResult = RefundPolicyEngine.validate({
         customer,
         order,
@@ -86,12 +76,10 @@ export const processRefundTool = tool(
         });
       }
 
-      // 6. Determine Refund Status (APPROVED vs PENDING for > ₹10,000 High Value)
       const finalStatus = policyResult.requiresHumanApproval
         ? RefundDecisionStatus.PENDING
         : RefundDecisionStatus.APPROVED;
 
-      // 7. Execute Database Transaction via RefundService
       const refundRecord = await RefundService.createRefundRecord({
         orderId,
         customerId,

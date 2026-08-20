@@ -8,27 +8,25 @@ export async function GET(req: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const sendEvent = (data: any) => {
+      const sendEvent = (data: unknown) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
-      // Push initial metrics & execution snapshot
       try {
         const metrics = await AgentLogService.getMetrics();
         const executions = await AgentLogService.getAllExecutions(20);
         sendEvent({ type: 'INIT', metrics, executions });
-      } catch (err: any) {
-        sendEvent({ type: 'ERROR', error: err.message });
+      } catch (err: unknown) {
+        const errorObj = err as Error;
+        sendEvent({ type: 'ERROR', error: errorObj.message });
       }
 
-      // Heartbeat interval to maintain active SSE connection
       const interval = setInterval(async () => {
         try {
           const metrics = await AgentLogService.getMetrics();
           const executions = await AgentLogService.getAllExecutions(20);
           sendEvent({ type: 'UPDATE', metrics, executions });
-        } catch (e) {
-          // Ignore transient polling stream errors
+        } catch {
         }
       }, 3000);
 
