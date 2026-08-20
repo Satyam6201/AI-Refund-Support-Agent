@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
           sendEvent({ type: 'UPDATE', metrics, executions });
         } catch {
         }
-      }, 3000);
+      }, 8000);
 
       req.signal.addEventListener('abort', () => {
         clearInterval(interval);
