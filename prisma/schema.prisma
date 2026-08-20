@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CustomerTier {
+  VIP
+  REGULAR
+  NEW
+}
+
+enum ProductCategory {
+  ELECTRONICS
+  CLOTHING
+  HOME
+  BOOKS
+  SOFTWARE
+}
+
+enum ProductCondition {
+  UNOPENED
+  OPENED
+  USED
+  DAMAGED
+  DEFECTIVE
+}
+
+enum RefundStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+enum RefundDecisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ESCALATED
+}
+
+enum LogType {
+  TOOL_CALL
+  TOOL_RESULT
+  POLICY_CHECK
+  REASONING
+  SYSTEM
+  ERROR
+}
+
+model Customer {
+  id          String           @id @default(cuid())
+  name        String
+  email       String           @unique
+  phone       String
+  tier        CustomerTier     @default(REGULAR)
+  totalOrders Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  orders      Order[]
+  refunds     Refund[]
+  executions  AgentExecution[]
+
+  @@index([email])
+}
+
+model Order {
+  id               String           @id @default(cuid())
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory
+  amount           Float
+  orderDate        DateTime
+  deliveryDate     DateTime
+  productCondition ProductCondition @default(UNOPENED)
+  isFinalSale      Boolean          @default(false)
+  refundStatus     RefundStatus     @default(NONE)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  refund           Refund?
+
+  @@index([customerId])
+  @@index([orderDate])
+  @@index([refundStatus])
+}
+
+model Refund {
+  id          String               @id @default(cuid())
+  orderId     String               @unique
+  order       Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      RefundDecisionStatus @default(PENDING)
+  reason      String
+  processedAt DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model AgentExecution {
+  id            String          @id @default(cuid())
+  customerId    String?
+  customer      Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  userMessage   String
+  status        ExecutionStatus @default(PENDING)
+  finalDecision String?
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+
+  logs          AgentLog[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model AgentLog {
+  id          String         @id @default(cuid())
+  executionId String
+  execution   AgentExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  step        String
+  type        LogType
+  message     String
+  metadata    Json?
+  timestamp   DateTime       @default(now())
+
+  @@index([executionId])
+  @@index([timestamp])
+}
