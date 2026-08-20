@@ -7,15 +7,11 @@ import { agentTools } from '@/core/tools';
 import { AgentLogService } from '@/services/agent-log.service';
 import { LogType } from '@prisma/client';
 
-// Map of tools by name for instant execution
-const toolsByNameMap: Record<string, any> = {};
+const toolsByNameMap: Record<string, unknown> = {};
 for (const t of agentTools) {
   toolsByNameMap[t.name] = t;
 }
 
-/**
- * Node 1: Agent Reasoning & LLM Call Node
- */
 async function agentNode(state: RefundAgentState): Promise<Partial<RefundAgentState>> {
   const model = getAgentModel();
   const systemMessage = new SystemMessage(REFUND_AGENT_SYSTEM_PROMPT);
@@ -36,9 +32,6 @@ async function agentNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
   };
 }
 
-/**
- * Node 2: Tool Execution & Logging Node
- */
 async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentState>> {
   const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
   const toolCalls = lastMessage.tool_calls || [];
@@ -50,7 +43,7 @@ async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
   let nextStatus = state.status;
 
   for (const call of toolCalls) {
-    const targetTool = toolsByNameMap[call.name];
+    const targetTool = toolsByNameMap[call.name] as { invoke: (args: unknown) => Promise<string> } | undefined;
     if (!targetTool) {
       const errorMsg = `Tool '${call.name}' is not recognized.`;
       if (state.executionId) {
@@ -70,7 +63,6 @@ async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
       continue;
     }
 
-    // Determine Step Name & Log Event Type
     let stepName = `Tool: ${call.name}`;
     let logType: LogType = LogType.TOOL_CALL;
 
@@ -91,15 +83,14 @@ async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
       });
     }
 
-    // Execute Tool Safely
     let toolResultString: string;
     try {
       toolResultString = await targetTool.invoke(call.args);
-    } catch (err: any) {
-      toolResultString = JSON.stringify({ success: false, error: err.message || 'Tool execution error' });
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      toolResultString = JSON.stringify({ success: false, error: errorObj.message || 'Tool execution error' });
     }
 
-    // Parse Tool Result for State Synchronization
     try {
       const parsed = JSON.parse(toolResultString);
 
@@ -129,8 +120,7 @@ async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
           metadata: parsed,
         });
       }
-    } catch (e) {
-      // Ignore JSON parse errors for raw strings
+    } catch {
     }
 
     newMessages.push(
@@ -150,9 +140,6 @@ async function toolsNode(state: RefundAgentState): Promise<Partial<RefundAgentSt
   };
 }
 
-/**
- * Conditional Router Edge
- */
 function shouldContinue(state: RefundAgentState): string {
   const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
   if (lastMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
@@ -161,9 +148,6 @@ function shouldContinue(state: RefundAgentState): string {
   return END;
 }
 
-/**
- * Build & Compile LangGraph StateGraph
- */
 export function createRefundAgentGraph() {
   const workflow = new StateGraph(RefundAgentStateAnnotation)
     .addNode('agent', agentNode)

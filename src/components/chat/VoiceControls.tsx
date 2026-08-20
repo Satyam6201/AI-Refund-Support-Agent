@@ -27,7 +27,6 @@ export function VoiceControls({ onSpeechTranscribed, lastAgentMessage, isProcess
   const [recognition, setRecognition] = useState<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
-    // Check SpeechRecognition browser support
     const win = window as unknown as {
       SpeechRecognition?: new () => SpeechRecognitionInstance;
       webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
@@ -62,10 +61,9 @@ export function VoiceControls({ onSpeechTranscribed, lastAgentMessage, isProcess
     }
   }, [onSpeechTranscribed]);
 
-  // Read aloud last agent message if TTS is enabled
   useEffect(() => {
     if (ttsEnabled && lastAgentMessage && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(lastAgentMessage);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
@@ -89,7 +87,7 @@ export function VoiceControls({ onSpeechTranscribed, lastAgentMessage, isProcess
   };
 
   if (!isSupported) {
-    return null; // Gracefully hide voice controls if browser doesn't support Web Speech API
+    return null;
   }
 
   return (

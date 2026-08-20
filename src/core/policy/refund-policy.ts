@@ -13,10 +13,6 @@ export interface PolicyValidationInput {
 }
 
 export class RefundPolicyEngine {
-  /**
-   * Deterministically validates refund eligibility against all 8 strict policy rules.
-   * This logic is 100% code-driven and independent of LLM reasoning.
-   */
   public static validate(input: PolicyValidationInput): PolicyValidationResult {
     const checks: PolicyCheckResult[] = [];
     const violations: PolicyViolationCode[] = [];
@@ -24,7 +20,6 @@ export class RefundPolicyEngine {
 
     const { customer, order, existingRefund, requestedCustomerId, requestedAmount } = input;
 
-    // Rule 1: Customer Existence & Relationship Validation
     const customerIdToMatch = requestedCustomerId || (customer ? customer.id : undefined);
     const hasValidCustomer = !!customer;
     const hasValidOrder = !!order;
@@ -78,7 +73,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // If order or customer is missing, stop evaluating further order attributes
     if (!order || !customer || !isCustomerMatch) {
       return {
         eligible: false,
@@ -88,7 +82,6 @@ export class RefundPolicyEngine {
       };
     }
 
-    // Rule 2: 30-Day Return Window (Calendar days from deliveryDate)
     const deliveryTime = new Date(order.deliveryDate).getTime();
     const nowTime = new Date().getTime();
     const daysSinceDelivery = Math.floor((nowTime - deliveryTime) / (1000 * 60 * 60 * 24));
@@ -110,7 +103,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // Rule 3: Unused Product Condition
     const isUsed = order.productCondition === 'USED';
     if (isUsed) {
       violations.push('PRODUCT_CONDITION_USED');
@@ -128,7 +120,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // Rule 4: Final Sale Restriction
     if (order.isFinalSale) {
       violations.push('FINAL_SALE_PRODUCT');
       checks.push({
@@ -145,7 +136,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // Rule 5: Duplicate Refund Prevention
     const isAlreadyRefunded = order.refundStatus === 'REFUNDED' || !!existingRefund;
     if (isAlreadyRefunded) {
       violations.push('ALREADY_REFUNDED');
@@ -163,7 +153,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // Rule 6: Refund Amount Cap
     const targetAmount = requestedAmount ?? order.amount;
     if (targetAmount > order.amount) {
       violations.push('AMOUNT_EXCEEDS_ORDER');
@@ -181,7 +170,6 @@ export class RefundPolicyEngine {
       });
     }
 
-    // Rule 7: High Value Approval Threshold (> ₹10,000)
     if (targetAmount > REFUND_POLICY_CONSTANTS.HIGH_VALUE_THRESHOLD_INR) {
       requiresHumanApproval = true;
       checks.push({

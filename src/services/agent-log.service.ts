@@ -19,7 +19,6 @@ export type EventLogType =
   | 'AGENT_COMPLETED'
   | 'AGENT_FAILED';
 
-// In-memory fallback log store for development resilience
 const MEMORY_EXECUTIONS: any[] = [];
 const MEMORY_LOGS: any[] = [];
 

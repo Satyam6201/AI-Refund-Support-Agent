@@ -25,7 +25,6 @@ export function Navbar() {
     <nav className="border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo & Brand */}
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="p-2 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl shadow-md group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 animate-pulse-glow">
               <Bot className="h-5 w-5" />
@@ -40,7 +39,6 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center space-x-1 bg-slate-100/60 dark:bg-slate-800/60 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
             {navItems.map((item) => {
               const isActive = mounted && pathname === item.href;
@@ -63,7 +61,6 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Right Status Badge */}
           <div className="hidden md:flex items-center space-x-3">
             <Badge variant="success" className="px-3.5 py-1 flex items-center gap-2 font-semibold text-[11px] shadow-sm hover:scale-105 transition-transform">
               <span className="relative flex h-2 w-2">
@@ -74,7 +71,6 @@ export function Navbar() {
             </Badge>
           </div>
 
-          {/* Mobile Hamburger Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -87,7 +83,6 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t bg-white dark:bg-slate-900 px-4 pt-3 pb-4 space-y-2 shadow-lg animate-in slide-in-from-top-2">
           {navItems.map((item) => {

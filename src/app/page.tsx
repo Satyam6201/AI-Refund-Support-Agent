@@ -8,11 +8,8 @@ import Link from 'next/link';
 export default function Home() {
   return (
     <div className="min-h-screen pb-16">
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8 animate-fade-in-up">
-        {/* Hero Banner */}
         <section className="bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-950 text-white rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden border border-white/10">
-          {/* Decorative Background Glow Spheres */}
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
           <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -44,9 +41,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Feature Grid & Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Chat Preview */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
@@ -61,7 +56,6 @@ export default function Home() {
             <ChatContainer />
           </div>
 
-          {/* Right Column: Admin Overview */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-lg flex items-center gap-2 text-slate-900 dark:text-slate-100">
